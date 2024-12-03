@@ -1,0 +1,52 @@
+mysql:
+  image: gcr.io/trillian-opensource-ci/db_server:v1.4.0
+  imagePullPolicy: IfNotPresent
+  username: test
+  password: zaphod
+  rootPassword: zaphod
+  database: test
+  service:
+    port: 3306
+  persistence:
+    enabled: false
+    accessMode: ReadWriteOnce
+    size: 10Gi
+
+redis:
+  image: redis:6.2
+  imagePullPolicy: IfNotPresent
+  password: test
+  service:
+    port: 6379
+  persistence:
+    enabled: false
+    accessMode: ReadWriteOnce
+    size: 10Gi
+
+trillianLogServer:
+  image: ghcr.io/sigstore/scaffolding/trillian_log_server@sha256:beffee16bb07b5cb051dc4e476d3a1063521ed5ae0b670efc7fe6f3507d94d2b
+  imagePullPolicy: IfNotPresent
+  service:
+    grpcPort: 8090
+    httpPort: 8091
+
+trillianLogSigner:
+  image: ghcr.io/sigstore/scaffolding/trillian_log_signer@sha256:79d57af375cfa997ed5452cc0c02c0396d909fcc91d11065586f119490aa9214
+  imagePullPolicy: IfNotPresent
+  service:
+    port: 8092
+
+rekorServer:
+  image: ghcr.io/sigstore/rekor:latest
+  imagePullPolicy: IfNotPresent
+  service:
+    port: 3000
+    metricsPort: 2112
+  attestationStorage:
+    enabled: true
+    mountPath: /var/run/attestations
+    storageBucket: file:///var/run/attestations
+    persistence:
+      enabled: false
+      accessMode: ReadWriteOnce
+      size: 10Gi

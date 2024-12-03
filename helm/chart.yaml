@@ -1,0 +1,6 @@
+apiVersion: v2
+name: rekor
+description: A Helm chart for deploying Rekor and its dependencies
+type: application
+version: 0.1.0
+appVersion: "1.0"

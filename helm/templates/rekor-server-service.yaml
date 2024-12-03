@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "rekor.fullname" . }}-rekor-server
+  labels:
+    app: {{ include "rekor.fullname" . }}-rekor-server
+spec:
+  ports:
+    - port: {{ .Values.rekorServer.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+    - port: {{ .Values.rekorServer.service.metricsPort }}
+      targetPort: metrics
+      protocol: TCP
+      name: metrics
+  selector:
+    app: {{ include "rekor.fullname" . }}-rekor-server

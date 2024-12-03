@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "rekor.fullname" . }}-trillian-log-server
+  labels:
+    app: {{ include "rekor.fullname" . }}-trillian-log-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ include "rekor.fullname" . }}-trillian-log-server
+  template:
+    metadata:
+      labels:
+        app: {{ include "rekor.fullname" . }}-trillian-log-server
+    spec:
+      containers:
+        - name: trillian-log-server
+          image: {{ .Values.trillianLogServer.image }}
+          imagePullPolicy: {{ .Values.trillianLogServer.imagePullPolicy }}
+          command:
+            - "/go/bin/trillian_log_server"
+            - "--quota_system=noop"
+            - "--storage_system=mysql"
+            - "--mysql_uri={{ .Values.mysql.username }}:{{ .Values.mysql.password }}@tcp({{ include "rekor.fullname" . }}-mysql:{{ .Values.mysql.service.port }})/{{ .Values.mysql.database }}"
+            - "--rpc_endpoint=0.0.0.0:{{ .Values.trillianLogServer.service.grpcPort }}"
+            - "--http_endpoint=0.0.0.0:{{ .Values.trillianLogServer.service.httpPort }}"
+            - "--alsologtostderr"
+          ports:
+            - containerPort: {{ .Values.trillianLogServer.service.grpcPort }}
+              name: grpc
+            - containerPort: {{ .Values.trillianLogServer.service.httpPort }}
+              name: http
+          livenessProbe:
+            httpGet:
+              path: /debug/healthz
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /debug/healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10

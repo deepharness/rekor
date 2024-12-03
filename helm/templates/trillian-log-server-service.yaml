@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "rekor.fullname" . }}-trillian-log-server
+  labels:
+    app: {{ include "rekor.fullname" . }}-trillian-log-server
+spec:
+  ports:
+    - port: {{ .Values.trillianLogServer.service.grpcPort }}
+      targetPort: grpc
+      protocol: TCP
+      name: grpc
+    - port: {{ .Values.trillianLogServer.service.httpPort }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app: {{ include "rekor.fullname" . }}-trillian-log-server

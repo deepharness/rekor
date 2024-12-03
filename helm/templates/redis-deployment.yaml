@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "rekor.fullname" . }}-redis
+  labels:
+    app: {{ include "rekor.fullname" . }}-redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ include "rekor.fullname" . }}-redis
+  template:
+    metadata:
+      labels:
+        app: {{ include "rekor.fullname" . }}-redis
+    spec:
+      containers:
+        - name: redis
+          image: {{ .Values.redis.image }}
+          imagePullPolicy: {{ .Values.redis.imagePullPolicy }}
+          args:
+            - "--bind"
+            - "0.0.0.0"
+            - "--appendonly"
+            - "yes"
+            - "--requirepass"
+            - {{ .Values.redis.password }}
+          ports:
+            - containerPort: {{ .Values.redis.service.port }}
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.redis.service.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.redis.service.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 10

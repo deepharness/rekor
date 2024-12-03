@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "rekor.fullname" . }}-rekor-server
+  labels:
+    app: {{ include "rekor.fullname" . }}-rekor-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ include "rekor.fullname" . }}-rekor-server
+  template:
+    metadata:
+      labels:
+        app: {{ include "rekor.fullname" . }}-rekor-server
+    spec:
+      containers:
+        - name: rekor-server
+          image: {{ .Values.rekorServer.image }}
+          imagePullPolicy: {{ .Values.rekorServer.imagePullPolicy }}
+          command:
+            - "rekor-server"
+            - "serve"
+            - "--trillian_log_server.address={{ include "rekor.fullname" . }}-trillian-log-server"
+            - "--trillian_log_server.port={{ .Values.trillianLogServer.service.grpcPort }}"
+            - "--redis_server.address={{ include "rekor.fullname" . }}-redis"
+            - "--redis_server.password={{ .Values.redis.password }}"
+            - "--redis_server.port={{ .Values.redis.service.port }}"
+            - "--rekor_server.address=0.0.0.0"
+            - "--rekor_server.port={{ .Values.rekorServer.service.port }}"
+            - "--rekor_server.signer=memory"
+            {{- if .Values.rekorServer.attestationStorage.enabled }}
+            - "--enable_attestation_storage"
+            - "--attestation_storage_bucket={{ .Values.rekorServer.attestationStorage.storageBucket }}"
+            {{- end }}
+            - "--enable_stable_checkpoint"
+            - "--search_index.storage_provider=mysql"
+            - "--search_index.mysql.dsn={{ .Values.mysql.username }}:{{ .Values.mysql.password }}@tcp({{ include "rekor.fullname" . }}-mysql:{{ .Values.mysql.service.port }})/{{ .Values.mysql.database }}"
+          env:
+            - name: TMPDIR
+              value: {{ .Values.rekorServer.attestationStorage.mountPath }}
+          ports:
+            - containerPort: {{ .Values.rekorServer.service.port }}
+              name: http
+            - containerPort: {{ .Values.rekorServer.service.metricsPort }}
+              name: metrics
+          volumeMounts:
+            {{- if .Values.rekorServer.attestationStorage.enabled }}
+            - name: attestation-storage
+              mountPath: {{ .Values.rekorServer.attestationStorage.mountPath }}
+            {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /ping
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ping
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        {{- if .Values.rekorServer.attestationStorage.enabled }}
+        - name: attestation-storage
+          emptyDir: {}
+        {{- end }}
