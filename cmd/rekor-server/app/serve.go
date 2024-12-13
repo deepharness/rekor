@@ -28,7 +28,6 @@ import (
 	"github.com/spf13/viper"
 	"sigs.k8s.io/release-utils/version"
 
-	"github.com/sigstore/rekor/pkg/api"
 	"github.com/sigstore/rekor/pkg/generated/restapi"
 	"github.com/sigstore/rekor/pkg/generated/restapi/operations"
 	"github.com/sigstore/rekor/pkg/log"
@@ -126,9 +125,13 @@ var serveCmd = &cobra.Command{
 		server.Port = int(viper.GetUint("port"))
 		server.EnabledListeners = []string{"http"}
 
-		treeID := viper.GetUint("trillian_log_server.tlog_id")
+		// Get the accountId from environemnt
+		//Check the EntryIndex table / redis for entry.
+		// create a new entry if not present.
 
-		api.ConfigureAPI(treeID)
+		//treeID := viper.GetUint("trillian_log_server.tlog_id")
+
+		//api.ConfigureAPI(treeID)
 		server.ConfigureAPI()
 
 		http.Handle("/metrics", promhttp.Handler())

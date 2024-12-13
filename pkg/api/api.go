@@ -105,7 +105,7 @@ type API struct {
 	newEntryPublisher pubsub.Publisher
 }
 
-func NewAPI(treeID uint) (*API, error) {
+func NewAPI(treeID uint, accountId string) (*API, error) {
 	logRPCServer := fmt.Sprintf("%s:%d",
 		viper.GetString("trillian_log_server.address"),
 		viper.GetUint("trillian_log_server.port"))
@@ -126,7 +126,7 @@ func NewAPI(treeID uint) (*API, error) {
 	tid := int64(treeID)
 	if tid == 0 {
 		log.Logger.Info("No tree ID specified, attempting to create a new tree")
-		t, err := trillianclient.CreateAndInitTree(ctx, logAdminClient, logClient)
+		t, err := trillianclient.CreateAndInitTree(ctx, accountId, logAdminClient, logClient)
 		if err != nil {
 			return nil, fmt.Errorf("create and init tree: %w", err)
 		}
@@ -188,10 +188,10 @@ var (
 	redisClient              *redis.Client
 )
 
-func ConfigureAPI(treeID uint) {
+func ConfigureAPI(treeID uint, accountId string) {
 	var err error
 
-	api, err = NewAPI(treeID)
+	api, err = NewAPI(treeID, accountId)
 	if err != nil {
 		log.Logger.Panic(err)
 	}

@@ -360,12 +360,13 @@ func (t *TrillianClient) getProofByHash(hashValue []byte) *Response {
 	}
 }
 
-func CreateAndInitTree(ctx context.Context, adminClient trillian.TrillianAdminClient, logClient trillian.TrillianLogClient) (*trillian.Tree, error) {
+func CreateAndInitTree(ctx context.Context, accountId string, adminClient trillian.TrillianAdminClient, logClient trillian.TrillianLogClient) (*trillian.Tree, error) {
 	t, err := adminClient.CreateTree(ctx, &trillian.CreateTreeRequest{
 		Tree: &trillian.Tree{
 			TreeType:        trillian.TreeType_LOG,
 			TreeState:       trillian.TreeState_ACTIVE,
 			MaxRootDuration: durationpb.New(time.Hour),
+			Description:     accountId,
 		},
 	})
 	if err != nil {

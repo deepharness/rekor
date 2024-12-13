@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"strings"
 )
 
 // possible rekorInstanceMap maps organization/project combinations to Rekor instance URLs.
@@ -27,14 +26,14 @@ func ProxyHandler() http.HandlerFunc {
 		}
 
 		// Parse the URL path to extract org and project.
-		pathSegments := strings.Split(r.URL.Path, "/")
-		if len(pathSegments) < 6 || pathSegments[1] != "v1" || pathSegments[2] != "orgs" || pathSegments[4] != "projects" {
-			http.Error(w, "Invalid URL format", http.StatusBadRequest)
-			return
-		}
+		// pathSegments := strings.Split(r.URL.Path, "/")
+		// if len(pathSegments) < 6 || pathSegments[1] != "v1" || pathSegments[2] != "orgs" || pathSegments[4] != "projects" {
+		// 	http.Error(w, "Invalid URL format", http.StatusBadRequest)
+		// 	return
+		// }
 
-		org := pathSegments[3]
-		project := pathSegments[5]
+		// org := pathSegments[3]
+		// project := pathSegments[5]
 		// key := fmt.Sprintf("%s/%s", org, project)
 
 		// // Retrieve the corresponding Rekor instance URL.
@@ -44,7 +43,7 @@ func ProxyHandler() http.HandlerFunc {
 		// 	return
 		// }
 
-		rekorURLStr := "http://localhost:3000"
+		rekorURLStr := "http://localhost:3100"
 
 		// Parse the Rekor server URL.
 		rekorURL, err := url.Parse(rekorURLStr)
@@ -55,8 +54,8 @@ func ProxyHandler() http.HandlerFunc {
 		}
 
 		// Remove the /v1/orgs/{org}/projects/{project} prefix from the URL path.
-		newPath := "/" + strings.Join(pathSegments[6:], "/")
-		r.URL.Path = newPath
+		// newPath := "/" + strings.Join(pathSegments[6:], "/")
+		// r.URL.Path = newPath
 
 		// Create a reverse proxy to the Rekor server.
 		proxy := httputil.NewSingleHostReverseProxy(rekorURL)
@@ -70,14 +69,14 @@ func ProxyHandler() http.HandlerFunc {
 			// Update the request URL to point to the Rekor instance.
 			req.URL.Scheme = rekorURL.Scheme
 			req.URL.Host = rekorURL.Host
-			req.URL.Path = newPath
+			//req.URL.Path = newPath
 
 			// Optionally, forward the auth header.
 			// req.Header.Set("Authorization", authHeader)
 		}
 
 		// Log the request for debugging purposes.
-		log.Printf("Proxying request for org: %s, project: %s, path: %s to %s", org, project, r.URL.Path, rekorURLStr)
+		//log.Printf("Proxying request for org: %s, project: %s, path: %s to %s", org, project, r.URL.Path, rekorURLStr)
 
 		// Proxy the request to the Rekor server.
 		proxy.ServeHTTP(w, r)
@@ -86,7 +85,7 @@ func ProxyHandler() http.HandlerFunc {
 
 func main() {
 	// Set up the HTTP server.
-	http.HandleFunc("/v1/orgs/", ProxyHandler())
+	http.HandleFunc("/", ProxyHandler())
 
 	// Start the HTTP server.
 	port := 1234

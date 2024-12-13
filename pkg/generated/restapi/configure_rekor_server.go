@@ -39,6 +39,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
+	"github.com/sigstore/rekor/pkg/api"
 	pkgapi "github.com/sigstore/rekor/pkg/api"
 	"github.com/sigstore/rekor/pkg/generated/restapi/operations"
 	"github.com/sigstore/rekor/pkg/generated/restapi/operations/entries"
@@ -46,6 +47,7 @@ import (
 	"github.com/sigstore/rekor/pkg/generated/restapi/operations/pubkey"
 	"github.com/sigstore/rekor/pkg/generated/restapi/operations/tlog"
 	"github.com/sigstore/rekor/pkg/log"
+	provider "github.com/sigstore/rekor/pkg/tree"
 	"github.com/sigstore/rekor/pkg/util"
 
 	"golang.org/x/exp/slices"
@@ -250,10 +252,45 @@ func (l *logFormatter) NewLogEntry(r *http.Request) middleware.LogEntry {
 	return &zapLogEntry{r}
 }
 
+// Middleware to validate harness headers
+func validateHeadersMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Example header validation
+		harnessAccount := r.Header.Get("harness-account")
+		if harnessAccount == "" {
+			// http.Error(w, "Missing required header: harness-account", http.StatusBadRequest)
+			// return
+		}
+
+		dsn := viper.GetString("search_index.mysql.dsn")
+		// Initialize the database provider
+		dbProvider := provider.NewDBProvider(dsn)
+		defer dbProvider.Close()
+
+		//TODO: caching the treeId for faster results
+		var treeId int64
+		tree, err := dbProvider.GetTreeByDescription(harnessAccount)
+		if err != nil {
+			// As there are no tree for this account,create a new one.
+			treeId = 0
+		} else {
+			treeId = tree.TreeId
+		}
+
+		api.ConfigureAPI(uint(treeId), harnessAccount)
+
+		// Pass the request to the next handler
+		next.ServeHTTP(w, r)
+	})
+}
+
 // The middleware configuration happens before anything, this middleware also applies to serving the swagger.json document.
 // So this is a good place to plug in a panic handling middleware, logging and metrics
 func setupGlobalMiddleware(handler http.Handler) http.Handler {
 	returnHandler := recoverer(handler)
+	// Apply the middleware to validate headers
+	returnHandler = validateHeadersMiddleware(returnHandler)
+
 	maxReqBodySize := viper.GetInt64("max_request_body_size")
 	if maxReqBodySize > 0 {
 		returnHandler = maxBodySize(maxReqBodySize, returnHandler)
